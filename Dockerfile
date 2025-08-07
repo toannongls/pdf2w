@@ -14,11 +14,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Cài đặt Tesseract OCR Engine và Poppler
-# --no-install-recommends giúp tránh cài đặt các gói không cần thiết.
-# -y để tự động đồng ý với các yêu cầu cài đặt.
+# tesseract-ocr: Gói chính của Tesseract
 # tesseract-ocr-vie: Gói ngôn ngữ tiếng Việt
-# poppler-utils: Công cụ Poppler cần thiết cho pdf2image
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# poppler-utils: Công cụ Poppler
+# libpoppler-dev: Thư viện phát triển Poppler
+# --no-install-recommends: Tùy chọn để tránh cài đặt các gói không cần thiết
+# --fix-missing: Tùy chọn để thử sửa lỗi nếu có gói bị thiếu
+RUN apt-get update -y && apt-get install -y --fix-missing --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-vie \
     poppler-utils \
