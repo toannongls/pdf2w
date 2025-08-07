@@ -41,24 +41,29 @@ def pdf_image_to_word_ocr(pdf_path, docx_path):
     try:
         logging.info(f"Bắt đầu chuyển đổi PDF dạng ảnh sang Word bằng OCR: {pdf_path}")
         
-        # Sử dụng tạm thời một thư mục con trong TEMP_IMAGES_FOLDER cho mỗi lần chuyển đổi
-        session_temp_dir = os.path.join(app.config['TEMP_IMAGES_FOLDER'], os.urandom(16).hex())
-        os.makedirs(session_temp_dir, exist_ok=True)
+        # Lấy thông tin về số lượng trang để xử lý từng trang một
+        # Điều này giúp tiết kiệm bộ nhớ đáng kể
+        pages = convert_from_path(pdf_path, poppler_path=os.environ.get('POPPLER_PATH'))
+        num_pages = len(pages)
+        for p in pages:
+            p.close()
         
-        images = convert_from_path(pdf_path, output_folder=session_temp_dir, fmt='jpeg')
-        logging.info(f"Đã chuyển đổi {len(images)} trang PDF thành hình ảnh.")
-
         document = Document()
-        full_text = []
 
         # 2. Thực hiện OCR trên từng hình ảnh và thêm vào tài liệu Word
-        for i, image in enumerate(images):
-            logging.info(f"Đang xử lý OCR cho trang {i+1}...")
-            # Sử dụng ngôn ngữ tiếng Việt cho Tesseract
-            text = pytesseract.image_to_string(image, lang='vie')
-            full_text.append(text)
-            document.add_paragraph(text)
-            logging.info(f"OCR trang {i+1} hoàn tất.")
+        for i in range(1, num_pages + 1):
+            logging.info(f"Đang xử lý OCR cho trang {i}...")
+            
+            # Chuyển đổi và xử lý chỉ một trang tại một thời điểm
+            images = convert_from_path(pdf_path, first_page=i, last_page=i, poppler_path=os.environ.get('POPPLER_PATH'))
+            if images:
+                image = images[0]
+                # Sử dụng ngôn ngữ tiếng Việt cho Tesseract
+                text = pytesseract.image_to_string(image, lang='vie')
+                document.add_paragraph(text)
+                logging.info(f"OCR trang {i} hoàn tất.")
+                # Xóa hình ảnh khỏi bộ nhớ ngay sau khi xử lý
+                image.close()
         
         # 3. Lưu tài liệu Word
         document.save(docx_path)
@@ -71,13 +76,10 @@ def pdf_image_to_word_ocr(pdf_path, docx_path):
         logging.error(f"Lỗi khi chuyển đổi PDF dạng ảnh sang Word cho {pdf_path}: {e}", exc_info=True)
         return False
     finally:
-        # Dọn dẹp các file ảnh tạm thời
-        if os.path.exists(session_temp_dir):
-            try:
-                shutil.rmtree(session_temp_dir)
-                logging.info(f"Đã xóa thư mục ảnh tạm thời: {session_temp_dir}")
-            except Exception as e:
-                logging.error(f"Lỗi khi xóa thư mục ảnh tạm thời {session_temp_dir}: {e}", exc_info=True)
+        # Dọn dẹp các file ảnh tạm thời nếu có
+        # Lưu ý: Với phương pháp này, việc dọn dẹp thư mục tạm thời sẽ ít cần thiết hơn
+        # vì chúng ta không lưu nhiều file ảnh cùng một lúc.
+        pass
 
 @app.route('/')
 def index():
