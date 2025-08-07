@@ -41,13 +41,11 @@ def pdf_image_to_word_ocr(pdf_path, docx_path):
     try:
         logging.info(f"Bắt đầu chuyển đổi PDF dạng ảnh sang Word bằng OCR: {pdf_path}")
         
-        # 1. Chuyển đổi PDF thành các hình ảnh
-        # paths_to_images = convert_from_path(pdf_path, output_folder=app.config['TEMP_IMAGES_FOLDER'], fmt='jpeg', paths_only=True)
         # Sử dụng tạm thời một thư mục con trong TEMP_IMAGES_FOLDER cho mỗi lần chuyển đổi
         session_temp_dir = os.path.join(app.config['TEMP_IMAGES_FOLDER'], os.urandom(16).hex())
         os.makedirs(session_temp_dir, exist_ok=True)
         
-        images = convert_from_path(pdf_path, output_folder=session_temp_dir, fmt='jpeg', poppler_path=os.environ.get('POPPLER_PATH'))
+        images = convert_from_path(pdf_path, output_folder=session_temp_dir, fmt='jpeg')
         logging.info(f"Đã chuyển đổi {len(images)} trang PDF thành hình ảnh.")
 
         document = Document()
